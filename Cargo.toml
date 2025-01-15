@@ -1,0 +1,10 @@
+[package]
+name = "cot"
+version = "0.0.1"
+edition = "2021"
+authors = ["邱张华 <qiuzhanghua@icloud.com>"]
+description = "Cross Os Toolkit for developers"
+license = "MIT"
+
+[dependencies]
+clap = { version = "4.5.26", features = ["derive", "unicode", "wrap_help", "cargo"] }
