@@ -1,0 +1,4 @@
+if [[ -z "${COT_HOME}" ]]; then
+export COT_HOME=ToBeDefined
+export PATH=${COT_HOME}/bin:$PATH
+fi

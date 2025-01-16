@@ -1,6 +1,16 @@
 use clap::{command, Arg, ArgAction, Command};
+use rust_embed::Embed;
+
+#[derive(Embed)]
+#[folder = "static/"]
+#[prefix = "static/"]
+struct Asset;
 
 fn main() {
+    for file in Asset::iter() {
+        println!("{}", file.as_ref());
+    }
+
     let _matches = command!()
         .help_template(
             "{about}
