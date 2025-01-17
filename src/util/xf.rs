@@ -1,7 +1,7 @@
+use flate2::read::GzDecoder;
 use std::fs::File;
 use std::io;
 use tar::Archive;
-use flate2::read::GzDecoder;
 
 pub fn decompress(input: &str, output: &str) -> io::Result<()> {
     let gzip_file = File::open(input)?;

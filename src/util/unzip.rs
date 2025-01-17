@@ -29,4 +29,3 @@ pub fn unzip(zip_path: &str, dest: &str) -> io::Result<()> {
     }
     Ok(())
 }
-

@@ -86,12 +86,14 @@ Commands:
         .subcommand(
             Command::new("huggingface-datasets")
                 .about("Huggingface-datasets/hd <id>'s directory")
-                .aliases(["hd"]),
+                .aliases(["hd"])
+                .arg(Arg::new("id").help("datasets id, such as 'sentence-transformers/all-nli'")),
         )
         .subcommand(
             Command::new("huggingface-models")
                 .about("Huggingface-models/hm <id>'s directory")
-                .aliases(["hm"]),
+                .aliases(["hm"])
+                .arg(Arg::new("id").help("model id, such as 'baai/bge-large-zh-v1.5'")),
         )
         .subcommand(
             Command::new("xf")
@@ -154,6 +156,31 @@ Commands:
             Ok(())
         }
         Some((cmd_name, args)) => match cmd_name {
+            "huggingface" => {
+                let hf_home = util::hf_home()?;
+                println!("{}", hf_home);
+                Ok(())
+            }
+            "huggingface-models" => {
+                let id = args.get_one::<String>("id");
+                if id.is_none() {
+                    warn!("model id is required, such as 'baai/bge-large-zh-v1.5'");
+                    return Ok(());
+                }
+                let hf_model = util::hf_model_path(id.unwrap())?;
+                println!("{}", hf_model);
+                Ok(())
+            }
+            "huggingface-datasets" => {
+                let id = args.get_one::<String>("id");
+                if id.is_none() {
+                    warn!("datasets id is required, such as 'sentence-transformers/all-nli'");
+                    return Ok(());
+                }
+                let hf_datasets = util::hf_datasets_path(id.unwrap())?;
+                println!("{}", hf_datasets);
+                Ok(())
+            }
             "xf" => {
                 let filename = args.get_one::<String>("filename");
                 let directory = args.get_one::<String>("directory");
