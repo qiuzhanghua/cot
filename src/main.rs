@@ -1,5 +1,5 @@
-use clap::{command, Arg, ArgAction, Command};
-use log::info;
+use clap::{command, Arg, Command};
+use log::{debug, error, info, trace, warn};
 use log4rs::{self, config::RawConfig};
 use rust_embed::Embed;
 use std::env;
@@ -42,9 +42,7 @@ fn main() {
     };
     log::set_max_level(logging_level);
 
-    info!("Hello, log4rs!");
-
-    let _matches = command!()
+    let mut cmd = command!()
         .help_template(
             "{about}
 {author}
@@ -92,8 +90,16 @@ Commands:
                 .about("Huggingface-models/hm <id>'s directory")
                 .aliases(["hm"]),
         )
-        .subcommand(Command::new("xf").about("Extract <filename.tar.gz>"))
-        .subcommand(Command::new("unzip").about("Extract <filename.zip>"))
+        .subcommand(
+            Command::new("xf")
+                .about("Extract <filename.tar.gz>")
+                .arg(Arg::new("filename")),
+        )
+        .subcommand(
+            Command::new("unzip")
+                .about("Extract <filename.zip>")
+                .arg(Arg::new("filename")),
+        )
         .subcommand(
             Command::new("tag")
                 .about("Tag [current|next|write|date|hash|show]")
@@ -124,13 +130,21 @@ Commands:
                         .about("Show information about tag")
                         .aliases(["s"]),
                 ),
-        )
-        .arg(
-            Arg::new("verbose")
-                .next_line_help(true)
-                .short('v')
-                .long("verbose")
-                .action(ArgAction::SetTrue),
-        )
-        .get_matches();
+        );
+    let matches = cmd.clone().get_matches();
+    let subcommand = matches.subcommand();
+    match subcommand {
+        None => {
+            let _ = cmd.print_help();
+        }
+        Some((cmd_name, args)) => match cmd_name {
+            "xf" => {
+                let filename = args.get_one::<String>("filename");
+                trace!("xf filename: {:?}", filename);
+            }
+            _ => {
+                trace!("cmd_name: {:?}, args: {:?}", cmd_name, args);
+            }
+        },
+    }
 }
