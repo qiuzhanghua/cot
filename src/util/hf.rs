@@ -84,7 +84,43 @@ pub fn huggingface_hub_cache() -> Result<String, io::Error> {
         }
     }
 
-    debug!("HuggingfaceHubCache: {}", cache);
+    debug!("Huggingface Hub Cache: {}", cache);
+
+    match fs::metadata(&cache) {
+        Ok(metadata) => {
+            if metadata.is_dir() {
+                Ok(cache)
+            } else {
+                Err(io::Error::new(
+                    io::ErrorKind::NotADirectory,
+                    format!("{} is not a directory", cache),
+                ))
+            }
+        }
+        Err(err) => Err(err),
+    }
+}
+
+pub fn hf_datasets_cache() -> Result<String, io::Error> {
+    let cache;
+
+    if env::var("HUGGINGFACE_HUB_CACHE").is_ok() {
+        match get_dir_with_env("HF_DATASETS_CACHE", "~/.cache/huggingface/datasets") {
+            Ok(path) => cache = path.clone(),
+            Err(err) => return Err(io::Error::new(io::ErrorKind::Other, err)),
+        }
+    } else {
+        match hf_home() {
+            Ok(hf_home_path) => {
+                let mut cache_path = PathBuf::from(hf_home_path);
+                cache_path.push("datasets");
+                cache = cache_path.to_str().unwrap_or("").to_string();
+            }
+            Err(err) => return Err(io::Error::new(io::ErrorKind::Other, err)),
+        }
+    }
+
+    debug!("Huggingface Datasets Cache: {}", cache);
 
     match fs::metadata(&cache) {
         Ok(metadata) => {
