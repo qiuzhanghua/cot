@@ -1,15 +1,18 @@
 use clap::{command, Arg, Command};
-use log::{debug, error, info, trace, warn};
+use log::{trace, warn};
 use log4rs::{self, config::RawConfig};
 use rust_embed::Embed;
 use std::env;
+use std::io;
+use std::path::PathBuf;
+mod util;
 
 #[derive(Embed)]
 #[folder = "static/"]
 #[prefix = ""]
 struct Asset;
 
-fn main() {
+fn main() -> io::Result<()> {
     // for file in Asset::iter() {
     //     println!("{}", file.as_ref());
     // }
@@ -93,11 +96,23 @@ Commands:
         .subcommand(
             Command::new("xf")
                 .about("Extract <filename.tar.gz>")
+                .arg(
+                    Arg::new("directory")
+                        .short('C')
+                        .long("Extract <filename.tar.gz> into <directory>")
+                        .default_value("."),
+                )
                 .arg(Arg::new("filename")),
         )
         .subcommand(
             Command::new("unzip")
                 .about("Extract <filename.zip>")
+                .arg(
+                    Arg::new("directory")
+                        .short('d')
+                        .long("Extract <filename.zip> into <directory>")
+                        .default_value("."),
+                )
                 .arg(Arg::new("filename")),
         )
         .subcommand(
@@ -136,14 +151,70 @@ Commands:
     match subcommand {
         None => {
             let _ = cmd.print_help();
+            Ok(())
         }
         Some((cmd_name, args)) => match cmd_name {
             "xf" => {
                 let filename = args.get_one::<String>("filename");
-                trace!("xf filename: {:?}", filename);
+                let directory = args.get_one::<String>("directory");
+                trace!("xf {:?} -> {:?}", filename, directory);
+                let file = PathBuf::from(filename.unwrap());
+                let working_dir = directory.unwrap();
+                if file.extension().is_none() {
+                    warn!("filename {:?} does not have an extension", filename);
+                    return Ok(());
+                }
+                let ext = file.extension().unwrap().to_str().unwrap();
+                match ext {
+                    "gz" => {
+                        // println!("Extracting {:?} -> {}", file, working_dir);
+                        let stem = file.file_stem().unwrap().to_string_lossy().into_owned();
+                        if !stem.ends_with(".tar") {
+                            warn!("filename {:?} does not have a .tar.gz extension", filename);
+                            return Ok(());
+                        }
+                        let temp_dir = tempfile::tempdir()?;
+                        let tar_file = temp_dir.path().join(stem);
+                        util::decompress(file.to_str().unwrap(), tar_file.to_str().unwrap())?;
+                        util::extract(tar_file.to_str().unwrap(), working_dir)?;
+                    }
+                    "tgz" => {
+                        // trace!("Extracting {:?} -> {}", file, directory);
+                        let stem = file.file_stem().unwrap().to_string_lossy().into_owned();
+                        let temp_dir = tempfile::tempdir()?;
+                        let tar_file = temp_dir.path().join(stem + ".tar");
+                        util::decompress(file.to_str().unwrap(), tar_file.to_str().unwrap())?;
+                        util::extract(tar_file.to_str().unwrap(), working_dir)?;
+                    }
+                    "tar" => {
+                        // trace!("Extracting {:?} -> {}", file, working_dir);
+                        util::extract(file.to_str().unwrap(), working_dir)?;
+                    }
+                    _ => {
+                        warn!("unknown extension {:?}", ext);
+                    }
+                }
+                Ok(())
+            }
+            "unzip" => {
+                let filename = args.get_one::<String>("filename");
+                let directory = args.get_one::<String>("directory");
+                let file = PathBuf::from(filename.unwrap());
+                let working_dir = directory.unwrap();
+                if file.extension().is_none() {
+                    warn!("filename {:?} does not have an extension", filename);
+                }
+                let ext = file.extension().unwrap().to_str().unwrap();
+                if ext == "zip" {
+                    util::unzip(file.to_str().unwrap(), working_dir)?;
+                } else {
+                    warn!("unknown extension {:?}", ext);
+                }
+                Ok(())
             }
             _ => {
                 trace!("cmd_name: {:?}, args: {:?}", cmd_name, args);
+                Ok(())
             }
         },
     }
