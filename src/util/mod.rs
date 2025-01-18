@@ -1,8 +1,10 @@
+mod git;
 mod hf;
 mod repl;
 mod unzip;
 mod xf;
 
+pub use self::git::*;
 pub use self::hf::*;
 pub use self::repl::*;
 pub use self::unzip::*;
