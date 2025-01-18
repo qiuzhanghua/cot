@@ -12,7 +12,7 @@ mod util;
 #[prefix = ""]
 struct Asset;
 
-fn main() -> io::Result<()> {
+fn main() -> anyhow::Result<()> {
     // for file in Asset::iter() {
     //     println!("{}", file.as_ref());
     // }

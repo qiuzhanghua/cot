@@ -3,7 +3,7 @@ use std::fs::File;
 use std::io;
 use tar::Archive;
 
-pub fn decompress(input: &str, output: &str) -> io::Result<()> {
+pub fn decompress(input: &str, output: &str) -> anyhow::Result<()> {
     let gzip_file = File::open(input)?;
     let mut decoder = GzDecoder::new(gzip_file);
     let mut tar_file = File::create(output)?;
@@ -12,7 +12,7 @@ pub fn decompress(input: &str, output: &str) -> io::Result<()> {
     Ok(())
 }
 
-pub fn extract(tar_path: &str, dest: &str) -> io::Result<()> {
+pub fn extract(tar_path: &str, dest: &str) -> anyhow::Result<()> {
     let file = File::open(tar_path)?;
     let mut archive = Archive::new(file);
     archive.unpack(dest)?;

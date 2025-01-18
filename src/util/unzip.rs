@@ -3,7 +3,7 @@ use std::io;
 use std::path::PathBuf;
 use zip::ZipArchive;
 
-pub fn unzip(zip_path: &str, dest: &str) -> io::Result<()> {
+pub fn unzip(zip_path: &str, dest: &str) -> anyhow::Result<()> {
     let zip_file = File::open(zip_path)?;
 
     let mut archive = ZipArchive::new(zip_file)?;
