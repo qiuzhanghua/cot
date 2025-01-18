@@ -2,12 +2,14 @@ mod git;
 mod hf;
 mod repl;
 mod unzip;
+mod ver;
 mod xf;
 
 pub use self::git::*;
 pub use self::hf::*;
 pub use self::repl::*;
 pub use self::unzip::*;
+pub use self::ver::*;
 pub use self::xf::*;
 
 use dirs::home_dir;
