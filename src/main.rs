@@ -1,10 +1,13 @@
+use crate::util::{git_add_tag, next_major, next_minor, next_patch, next_phase, next_pre};
 use clap::{command, Arg, Command};
-use log::{trace, warn};
+use log::{error, trace, warn};
 use log4rs::{self, config::RawConfig};
 use rust_embed::Embed;
+use semver::Version;
 use std::env;
 use std::io;
 use std::path::PathBuf;
+
 mod util;
 
 #[derive(Embed)]
@@ -30,7 +33,7 @@ fn main() -> anyhow::Result<()> {
         let log4rs_yaml = Asset::get("log4rs.yaml").unwrap();
         let log4rs_yaml_str = std::str::from_utf8(log4rs_yaml.data.as_ref()).unwrap();
         let config: RawConfig = serde_yaml::from_str(log4rs_yaml_str).unwrap();
-        log4rs::init_raw_config(config).unwrap();
+        log4rs::init_raw_config(config)?;
     }
     // set logging level to off default
     // if LOGGING_LEVEL is set in environment, use that
@@ -119,18 +122,38 @@ Commands:
         )
         .subcommand(
             Command::new("tag")
-                .about("Tag [current|next|write|date|hash|show]")
+                .about("Tag [current|next|date|hash|show]")
                 .aliases(["t"])
                 .subcommand(Command::new("current").about("Current tag").aliases(["c"]))
                 .subcommand(
                     Command::new("next")
                         .about("Next [major|minor|patch|pre|phase] of current tag")
-                        .aliases(["n"]),
-                )
-                .subcommand(
-                    Command::new("write")
-                        .about("Write current tag info into file")
-                        .aliases(["w"]),
+                        .aliases(["n"])
+                        .subcommand(
+                            Command::new("major")
+                                .about("Next major version of current tag")
+                                .aliases(["a"]),
+                        )
+                        .subcommand(
+                            Command::new("minor")
+                                .about("Next minor version of current tag")
+                                .aliases(["i"]),
+                        )
+                        .subcommand(
+                            Command::new("patch")
+                                .about("Next patch version of current tag")
+                                .aliases(["p"]),
+                        )
+                        .subcommand(
+                            Command::new("phase")
+                                .about("Next phase version of current tag")
+                                .aliases(["s"]),
+                        )
+                        .subcommand(
+                            Command::new("pre")
+                                .about("Next pre version of current tag")
+                                .aliases(["r"]),
+                        ),
                 )
                 .subcommand(
                     Command::new("date")
@@ -158,7 +181,7 @@ Commands:
         Some((cmd_name, args)) => match cmd_name {
             "huggingface" => {
                 let hf_home = util::hf_home()?;
-                println!("{}", hf_home);
+                print!("{}", hf_home);
                 Ok(())
             }
             "huggingface-models" => {
@@ -168,7 +191,7 @@ Commands:
                     return Ok(());
                 }
                 let hf_model = util::hf_model_path(id.unwrap())?;
-                println!("{}", hf_model);
+                print!("{}", hf_model);
                 Ok(())
             }
             "huggingface-datasets" => {
@@ -178,7 +201,7 @@ Commands:
                     return Ok(());
                 }
                 let hf_datasets = util::hf_datasets_path(id.unwrap())?;
-                println!("{}", hf_datasets);
+                print!("{}", hf_datasets);
                 Ok(())
             }
             "xf" => {
@@ -238,6 +261,147 @@ Commands:
                     warn!("unknown extension {:?}", ext);
                 }
                 Ok(())
+            }
+            "tag" => {
+                let tag_cmd = args.subcommand();
+                match tag_cmd {
+                    None => Ok(()),
+                    Some((cmd_name, _)) => match cmd_name {
+                        "current" => {
+                            let tag = util::git_latest_tag()?;
+                            print!("{}", tag);
+                            Ok(())
+                        }
+                        "next" => {
+                            let tag_next_cmd = args.subcommand();
+                            match tag_next_cmd {
+                                None => {
+                                    let _ = cmd.print_help();
+                                    Ok(())
+                                }
+                                Some((_, matches2)) => {
+                                    let cmd_tag_next = matches2.subcommand();
+                                    match cmd_tag_next {
+                                        None => Ok(()),
+                                        Some((cmd_name, _)) => match cmd_name {
+                                            "major" => {
+                                                let tag = util::git_latest_tag()?;
+                                                let version = Version::parse(&tag)?;
+                                                let next_version = next_major(version);
+                                                match git_add_tag(&next_version.to_string()) {
+                                                    Ok(_) => {
+                                                        println!("tag {} added.", next_version);
+                                                        Ok(())
+                                                    }
+                                                    Err(e) => {
+                                                        error!("git_add_tag error: {:?}", e);
+                                                        Ok(())
+                                                    }
+                                                }
+                                            }
+                                            "minor" => {
+                                                let tag = util::git_latest_tag()?;
+                                                let version = Version::parse(&tag)?;
+                                                let next_version = next_minor(version);
+                                                match git_add_tag(&next_version.to_string()) {
+                                                    Ok(_) => {
+                                                        println!("tag {} added.", next_version);
+                                                        Ok(())
+                                                    }
+                                                    Err(e) => {
+                                                        error!("git_add_tag error: {:?}", e);
+                                                        Ok(())
+                                                    }
+                                                }
+                                            }
+                                            "patch" => {
+                                                let tag = util::git_latest_tag()?;
+                                                let version = Version::parse(&tag)?;
+                                                let next_version = next_patch(version);
+                                                match git_add_tag(&next_version.to_string()) {
+                                                    Ok(_) => {
+                                                        println!("tag {} added.", next_version);
+                                                        Ok(())
+                                                    }
+                                                    Err(e) => {
+                                                        error!("git_add_tag error: {:?}", e);
+                                                        Ok(())
+                                                    }
+                                                }
+                                            }
+                                            "phase" => {
+                                                let tag = util::git_latest_tag()?;
+                                                let version = Version::parse(&tag)?;
+                                                let next_version = next_phase(version);
+                                                match git_add_tag(&next_version.to_string()) {
+                                                    Ok(_) => {
+                                                        println!("tag {} added.", next_version);
+                                                        Ok(())
+                                                    }
+                                                    Err(e) => {
+                                                        error!("git_add_tag error: {:?}", e);
+                                                        Ok(())
+                                                    }
+                                                }
+                                            }
+                                            "pre" => {
+                                                let tag = util::git_latest_tag()?;
+                                                let version = Version::parse(&tag)?;
+                                                let next_version = next_pre(version);
+                                                match git_add_tag(&next_version.to_string()) {
+                                                    Ok(_) => {
+                                                        println!("tag {} added.", next_version);
+                                                        Ok(())
+                                                    }
+                                                    Err(e) => {
+                                                        error!("git_add_tag error: {:?}", e);
+                                                        Ok(())
+                                                    }
+                                                }
+                                            }
+                                            _ => {
+                                                let _ = cmd.print_help();
+                                                Ok(())
+                                            }
+                                        },
+                                    }
+                                }
+                            }
+                        }
+                        "date" => {
+                            let tag = util::git_latest_tag()?;
+                            let date = util::git_date_of_hash(&tag)?;
+                            print!("{}", date);
+                            Ok(())
+                        }
+                        "hash" => {
+                            let tag = util::git_latest_tag()?;
+                            let hash = util::git_hash_of_tag(&tag)?;
+                            print!("{}", hash);
+                            Ok(())
+                        }
+                        "show" => {
+                            let tag = util::git_latest_tag()?;
+                            let tag_version = Version::parse(&tag)?;
+                            let pre = next_pre(tag_version.clone()).to_string();
+                            let phase = next_phase(tag_version.clone()).to_string();
+                            let patch = next_patch(tag_version.clone()).to_string();
+                            let minor = next_minor(tag_version.clone()).to_string();
+                            let major = next_major(tag_version.clone()).to_string();
+                            println!("Current tag: {}", tag);
+                            println!("Next  phase: {}", phase);
+                            println!("Next    pre: {}", pre);
+                            println!("Next  patch: {}", patch);
+                            println!("Next  minor: {}", minor);
+                            println!("Next  major: {}", major);
+                            Ok(())
+                        }
+                        _ => {
+                            let _ = cmd.print_help();
+                            Ok(())
+                        }
+                    },
+                }
             }
             _ => {
                 trace!("cmd_name: {:?}, args: {:?}", cmd_name, args);

@@ -29,13 +29,13 @@ pub fn git_dir_is_repo(path: &str) -> bool {
     output.is_ok()
 }
 
-fn git_add_tag(tag: &str) -> Result<String> {
+pub fn git_add_tag(tag: &str) -> Result<String> {
     let output = Command::new("git").arg("tag").arg(tag).output()?;
     let s = String::from_utf8(output.stdout)?;
     Ok(s.trim().to_string())
 }
 
-fn git_rev_of_tag(tag: &str) -> Result<String> {
+pub fn git_rev_of_tag(tag: &str) -> Result<String> {
     let output = Command::new("git")
         .arg("rev-parse")
         .arg("--short")
@@ -45,13 +45,13 @@ fn git_rev_of_tag(tag: &str) -> Result<String> {
     Ok(s.trim().to_string())
 }
 
-fn git_hash_of_tag(tag: &str) -> Result<String> {
+pub fn git_hash_of_tag(tag: &str) -> Result<String> {
     let output = Command::new("git").arg("rev-parse").arg(tag).output()?;
     let s = String::from_utf8(output.stdout)?;
     Ok(s.trim().to_string())
 }
 
-fn git_date_of_hash(hash: &str) -> Result<String> {
+pub fn git_date_of_hash(hash: &str) -> Result<String> {
     let output = Command::new("git")
         .arg("show")
         .arg("-s")
@@ -69,23 +69,18 @@ fn git_date_of_hash(hash: &str) -> Result<String> {
         ));
     }
 
-    let s = String::from_utf8(output.stdout).with_context(|| {
-        format!(
-            "Invalid UTF-8 output from git command
-for hash: {}",
-            hash
-        )
-    })?;
+    let s = String::from_utf8(output.stdout)
+        .with_context(|| format!("Invalid UTF-8 output from git command for hash: {}", hash))?;
     Ok(s.trim().to_string())
 }
 
-fn git_all_tags() -> Result<Vec<String>> {
+pub fn git_all_tags() -> Result<Vec<String>> {
     let output = Command::new("git").arg("tag").output()?;
     let s = String::from_utf8(output.stdout)?;
     Ok(s.trim().lines().map(|line| line.to_string()).collect())
 }
 
-fn git_latest_tag() -> Result<String> {
+pub fn git_latest_tag() -> Result<String> {
     match git_all_tags()? {
         arr if arr.is_empty() || (arr.len() == 1 && arr[0].is_empty()) => Ok("0.0.0".to_string()),
         arr => {

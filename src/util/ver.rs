@@ -39,7 +39,7 @@ pub fn next_pre(mut v: Version) -> Version {
     if pre == Prerelease::EMPTY {
         return next_phase(v);
     }
-    let mut parts = pre.split('.').collect::<Vec<&str>>();
+    let parts = pre.split('.').collect::<Vec<&str>>();
     let mut digit: u64 = 0;
     if parts.len() == 2 {
         digit = parts[1].parse::<u64>().unwrap_or(0);
